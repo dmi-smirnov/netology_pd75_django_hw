@@ -12,7 +12,7 @@ def articles_list(request: HttpRequest) -> HttpResponse:
     # https://docs.djangoproject.com/en/3.1/ref/models/querysets/#django.db.models.query.QuerySet.order_by
     ordering = 'published_at'
 
-    articles = Article.objects.prefetch_related('tag').all().order_by(ordering)
+    articles = Article.objects.prefetch_related('scopes__tag').all().order_by(ordering)
 
     context = {
         'object_list': articles

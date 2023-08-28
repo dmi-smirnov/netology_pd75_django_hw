@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
-from advertisements.models import Advertisement
+from advertisements.models import Advertisement, AdvertisementStatusChoices
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -15,7 +16,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class AdvertisementSerializer(serializers.ModelSerializer):
     """Serializer для объявления."""
-
+    
     creator = UserSerializer(
         read_only=True,
     )
@@ -23,7 +24,7 @@ class AdvertisementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Advertisement
         fields = ('id', 'title', 'description', 'creator',
-                  'status', 'created_at', )
+                  'status', 'created_at', 'updated_at')
 
     def create(self, validated_data):
         """Метод для создания"""
@@ -40,6 +41,16 @@ class AdvertisementSerializer(serializers.ModelSerializer):
     def validate(self, data):
         """Метод для валидации. Вызывается при создании и обновлении."""
 
-        # TODO: добавьте требуемую валидацию
+        # Проверяем количество открытых объявлений у инициатора запроса
+        OPEN_STATUS = AdvertisementStatusChoices.OPEN
+        if data.get('status', OPEN_STATUS) == OPEN_STATUS:
+            user_open_ads_amt = Advertisement.objects\
+                .filter(creator=self.context['request'].user,
+                        status=OPEN_STATUS)\
+                .count()
+            if user_open_ads_amt >= Advertisement.USER_OPEN_ADS_MAX:
+                raise ValidationError(
+                    "Amount of user's open advertisements must be no more"
+                    'than 10.')
 
         return data

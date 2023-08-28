@@ -7,10 +7,13 @@ class AdvertisementStatusChoices(models.TextChoices):
 
     OPEN = "OPEN", "Открыто"
     CLOSED = "CLOSED", "Закрыто"
+    DRAFT = 'DRAFT', 'Черновик'
 
 
 class Advertisement(models.Model):
     """Объявление."""
+    
+    USER_OPEN_ADS_MAX = 10
 
     title = models.TextField()
     description = models.TextField(default='')
@@ -27,4 +30,22 @@ class Advertisement(models.Model):
     )
     updated_at = models.DateTimeField(
         auto_now=True
+    )
+    users_favorited = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        through='UserFavoriteAdvertisement',
+        related_name='favorite_advertisements'
+    )
+
+
+class UserFavoriteAdvertisement(models.Model):
+    '''Объявление в избранном пользователя'''
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    advertisement = models.ForeignKey(
+        Advertisement,
+        on_delete=models.CASCADE
     )

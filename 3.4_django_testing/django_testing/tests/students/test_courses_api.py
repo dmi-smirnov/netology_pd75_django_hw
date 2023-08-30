@@ -1,7 +1,6 @@
 # def test_example():
 #     assert False, "Just test example"
 
-from django.test import override_settings
 import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -182,7 +181,6 @@ def test_delete_course(course_factory, api_client, course_route):
 
 
 @pytest.mark.django_db
-@override_settings(STUDENTS_MAX_PER_COURSE=3)
 def test_validate_max_students_per_course(settings, student_factory,
                                           course_factory, api_client,
                                           course_route):

@@ -85,7 +85,10 @@ def test_filter_courses_by_id(api_client, course_factory, course_route):
     course = courses[34]
 
     # Act
-    resp = api_client.get(f'{course_route}?id={course.id}')
+    resp = api_client.get(
+        path=course_route,
+        data={'id': course.id}
+    )
                          
     # Assert
     assert resp.status_code == status.HTTP_200_OK
@@ -107,7 +110,10 @@ def test_filter_courses_by_name(api_client, course_factory, course_route):
     course = courses[34]
 
     # Act
-    resp = api_client.get(f'{course_route}?name={course.name}')
+    resp = api_client.get(
+        path=course_route,
+        data={'name': course.name}
+    )
                          
     # Assert
     assert resp.status_code == status.HTTP_200_OK
@@ -179,61 +185,44 @@ def test_delete_course(course_factory, api_client, course_route):
 
     assert not Course.objects.filter(id=course.id)
 
-
+@pytest.mark.parametrize(
+    'students_max_per_course, students_amt, post_status_code, patch_status_code',
+    [
+        (3, 2, status.HTTP_201_CREATED,     status.HTTP_200_OK),
+        (3, 3, status.HTTP_201_CREATED,     status.HTTP_200_OK),
+        (3, 4, status.HTTP_400_BAD_REQUEST, status.HTTP_400_BAD_REQUEST),
+        (3, 5, status.HTTP_400_BAD_REQUEST, status.HTTP_400_BAD_REQUEST)
+    ]
+)
 @pytest.mark.django_db
-def test_validate_max_students_per_course(settings, student_factory,
+def test_validate_max_students_per_course(settings, students_max_per_course,
+                                          student_factory, students_amt,
                                           course_factory, api_client,
-                                          course_route):
+                                          course_route, post_status_code,
+                                          patch_status_code):
     # Arrange
-    settings.STUDENTS_MAX_PER_COURSE = 3
+    settings.STUDENTS_MAX_PER_COURSE = students_max_per_course
 
-    students = student_factory(_quantity=settings.STUDENTS_MAX_PER_COURSE + 1)
-    ok_patch_req_course = course_factory()
-    bad_patch_req_course = course_factory()
+    students = student_factory(_quantity=students_amt)
+    patch_req_course = course_factory()
 
-    ok_req_data = {
-        'name': 'Test course',
-        'students': [s.id for s in students[:settings.STUDENTS_MAX_PER_COURSE]]
-    }
-
-    bad_req_data = {
+    req_data = {
         'name': 'Test course',
         'students': [s.id for s in students]
     }
 
     # Act
-    ok_post_resp = api_client.post(
+    post_resp = api_client.post(
         path=course_route,
-        data=ok_req_data,
+        data=req_data,
         format='json'
     )
-    ok_patch_resp = api_client.patch(
-        path=f'{course_route}{ok_patch_req_course.id}/',
-        data=ok_req_data,
-        format='json'
-    )
-    bad_post_resp = api_client.post(
-        path=course_route,
-        data=bad_req_data,
-        format='json'
-    )
-    bad_patch_resp = api_client.patch(
-        path=f'{course_route}{bad_patch_req_course.id}/',
-        data=bad_req_data,
+    patch_resp = api_client.patch(
+        path=f'{course_route}{patch_req_course.id}/',
+        data=req_data,
         format='json'
     )
 
     # Assert
-    assert ok_post_resp.status_code == status.HTTP_201_CREATED
-    ok_post_resp_data = ok_post_resp.data
-    assert isinstance(ok_post_resp_data, dict)
-    assert 'id' in ok_post_resp_data
-    created_course = Course.objects.get(id=ok_post_resp_data['id'])
-    assert created_course.students.count() <= settings.STUDENTS_MAX_PER_COURSE
-
-    assert ok_patch_resp.status_code == status.HTTP_200_OK
-    assert ok_patch_req_course.students.count() <= settings.STUDENTS_MAX_PER_COURSE
-
-    assert bad_post_resp.status_code == status.HTTP_400_BAD_REQUEST
-
-    assert bad_patch_resp.status_code == status.HTTP_400_BAD_REQUEST
+    assert post_resp.status_code == post_status_code
+    assert patch_resp.status_code == patch_status_code

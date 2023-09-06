@@ -51,6 +51,6 @@ class AdvertisementSerializer(serializers.ModelSerializer):
             if user_open_ads_amt >= Advertisement.USER_OPEN_ADS_MAX:
                 raise ValidationError(
                     "Amount of user's open advertisements must be no more"
-                    'than 10.')
+                    f'than {Advertisement.USER_OPEN_ADS_MAX}.')
 
         return data

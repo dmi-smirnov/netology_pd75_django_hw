@@ -16,7 +16,7 @@ class AdvertisementFilter(filters.FilterSet):
                                       method='filter_favorited')
 
     def filter_favorited(self, queryset, name, value):
-        if IsAuthenticated().has_permission(self.request, view=None):
+        if self.request.user.is_authenticated:
             return queryset.filter(users_favorited__in=[self.request.user])
         return queryset
 

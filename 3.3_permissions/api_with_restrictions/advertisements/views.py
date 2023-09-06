@@ -37,7 +37,7 @@ class AdvertisementViewSet(ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
 
         # Если инициатор запроса аутентифицирован, то
-        if IsAuthenticated().has_permission(self.request, view=None):
+        if self.request.user.is_authenticated:
             # Исключаем из queryset чужие объявления-черновики
             queryset = queryset.exclude(
                 ~Q(creator=self.request.user),
